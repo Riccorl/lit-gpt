@@ -688,6 +688,20 @@ configs.extend(nous_research)
 llama_2 = [
     # https://huggingface.co/meta-llama/Llama-2-7b-hf/blob/main/config.json
     dict(
+        name="Llama-2-testb{}-hf",
+        hf_config=dict(org="meta-llama", name="Llama-2-7b{}-hf"),
+        vocab_size=32000,
+        padding_multiple=64,
+        n_layer=12,
+        n_head=12,
+        rotary_percentage=1.0,
+        parallel_residual=False,
+        bias=False,
+        _norm_class="RMSNorm",
+        _mlp_class="LLaMAMLP",
+        intermediate_size=11008,
+    ),
+    dict(
         name="Llama-2-7b{}-hf",
         hf_config=dict(org="meta-llama", name="Llama-2-7b{}-hf"),
         vocab_size=32000,
