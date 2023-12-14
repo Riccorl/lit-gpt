@@ -54,7 +54,7 @@ streaming dataset that comes with lit-gpt. You will need to have the tokenizer c
 pip install huggingface_hub sentencepiece
 
 python scripts/download.py \
-   --repo_id meta-llama/Llama-2-7b-chat-hf \
+   --repo_id meta-llama/Llama-2-7b-hf \
    --access_token your_hf_token \
    --tokenizer_only true
 ```

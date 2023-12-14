@@ -65,7 +65,9 @@ class Config:
 
         # vocab size should be a power of 2 to be optimal on hardware. compute the closest value
         if self.padded_vocab_size is None:
-            self.padded_vocab_size = find_multiple(self.vocab_size, self.padding_multiple)
+            self.padded_vocab_size = find_multiple(
+                self.vocab_size, self.padding_multiple
+            )
         else:
             # vocab size shouldn't be larger than padded vocab size
             self.vocab_size = min(self.vocab_size, self.padded_vocab_size)
@@ -89,7 +91,9 @@ class Config:
         if name not in name_to_config:
             # search through all `config['hf_config']['name']`
             try:
-                conf_dict = next(config for config in configs if name == config["hf_config"]["name"])
+                conf_dict = next(
+                    config for config in configs if name == config["hf_config"]["name"]
+                )
             except StopIteration:
                 raise ValueError(f"{name!r} is not a supported config name")
         else:
@@ -110,9 +114,15 @@ class Config:
         if "condense_ratio" in kwargs:  # legacy name
             kwargs["rope_condense_ratio"] = kwargs.pop("condense_ratio")
         if "org" in json_kwargs:  # legacy name
-            json_kwargs["hf_config"] = {"name": json_kwargs["name"], "org": json_kwargs.pop("org")}
+            json_kwargs["hf_config"] = {
+                "name": json_kwargs["name"],
+                "org": json_kwargs.pop("org"),
+            }
         if "org" in kwargs:  # legacy name
-            kwargs["hf_config"] = {"name": kwargs.get("name", json_kwargs["name"]), "org": kwargs.pop("org")}
+            kwargs["hf_config"] = {
+                "name": kwargs.get("name", json_kwargs["name"]),
+                "org": kwargs.pop("org"),
+            }
         json_kwargs.update(kwargs)
         return cls(**json_kwargs)
 
@@ -123,7 +133,9 @@ class Config:
             return cls.from_json(config_path, **kwargs)
         if (model_name := path.name) in name_to_config:
             return cls.from_name(model_name, **kwargs)
-        raise FileNotFoundError(f"For {str(path)!r} neither 'lit_config.json' nor matching config exists.")
+        raise FileNotFoundError(
+            f"For {str(path)!r} neither 'lit_config.json' nor matching config exists."
+        )
 
     @property
     def mlp_class(self) -> Type:
@@ -145,7 +157,10 @@ class Config:
 ########################
 configs = [
     # https://huggingface.co/stabilityai/stablelm-base-alpha-3b/blob/main/config.json
-    dict(name="stablelm-base-alpha-3b", hf_config=dict(org="stabilityai", name="stablelm-base-alpha-3b")),
+    dict(
+        name="stablelm-base-alpha-3b",
+        hf_config=dict(org="stabilityai", name="stablelm-base-alpha-3b"),
+    ),
     # https://huggingface.co/stabilityai/stablelm-base-alpha-7b/blob/main/config.json
     dict(
         name="stablelm-base-alpha-7b",
@@ -155,7 +170,11 @@ configs = [
         padding_multiple=256,
     ),
     # https://huggingface.co/stabilityai/stablelm-tuned-alpha-3b/blob/main/config.json
-    dict(name="stablelm-tuned-alpha-3b", hf_config=dict(org="stabilityai", name="stablelm-tuned-alpha-3b"), n_head=32),
+    dict(
+        name="stablelm-tuned-alpha-3b",
+        hf_config=dict(org="stabilityai", name="stablelm-tuned-alpha-3b"),
+        n_head=32,
+    ),
     # https://huggingface.co/stabilityai/stablelm-tuned-alpha-7b/blob/main/config.json
     dict(
         name="stablelm-tuned-alpha-7b",
@@ -688,18 +707,21 @@ configs.extend(nous_research)
 llama_2 = [
     # https://huggingface.co/meta-llama/Llama-2-7b-hf/blob/main/config.json
     dict(
-        name="Llama-2-testb{}-hf",
+        name="Llama-2-111M{}",
         hf_config=dict(org="meta-llama", name="Llama-2-7b{}-hf"),
         vocab_size=32000,
         padding_multiple=64,
-        n_layer=12,
-        n_head=12,
+        n_layer=8,
+        n_head=8,
+        block_size=1024,
+        n_query_groups=2,
+        n_embd=1024,
         rotary_percentage=1.0,
         parallel_residual=False,
         bias=False,
         _norm_class="RMSNorm",
         _mlp_class="LLaMAMLP",
-        intermediate_size=11008,
+        intermediate_size=1024,
     ),
     dict(
         name="Llama-2-7b{}-hf",
@@ -1220,7 +1242,10 @@ tiny_llama = [
     )
 ]
 for c in tiny_llama:
-    for kind, hf_postfix in (("", "-intermediate-step-955k-token-2T"), ("chat", "-Chat-v0.6")):
+    for kind, hf_postfix in (
+        ("", "-intermediate-step-955k-token-2T"),
+        ("chat", "-Chat-v0.6"),
+    ):
         copy = deepcopy(c)
         copy["name"] = c["name"].format(kind)
         copy["hf_config"]["name"] = c["hf_config"]["name"].format(hf_postfix)
