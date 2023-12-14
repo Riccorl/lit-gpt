@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 HF_CACHE = os.getenv("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
-
+print(HF_CACHE)
 
 def save_to_jsonl_streaming(dataset, path_to_save, split_size, max_samples):
     # now we can save the dataset in jsonl format, divided in multiple files
@@ -43,7 +43,7 @@ def save_to_jsonl_streaming(dataset, path_to_save, split_size, max_samples):
 
                 print(f"Writing to {split_path / f'{shard_idx}.jsonl'}")
                 with open(split_path / f"{shard_idx}.jsonl", "w") as f:
-                    f.writelines(json.dumps(r.to_json()) + "\n" for r in dataset_subset)
+                    f.writelines(json.dumps(r) + "\n" for r in dataset_subset)
 
                 dataset_subset = []
                 shard_idx += 1
