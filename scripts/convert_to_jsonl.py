@@ -16,7 +16,39 @@ logger.setLevel(logging.INFO)
 HF_CACHE = os.getenv("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
 
 
-def save_to_jsonl(dataset, path_to_save, split_size):
+def save_to_jsonl_streaming(dataset, path_to_save, split_size, max_samples):
+    # now we can save the dataset in jsonl format, divided in multiple files
+    # we would like to parallelize this step, we can use the multiprocessing library
+    dataset_path = Path(path_to_save)
+    dataset_path.mkdir(parents=True, exist_ok=True)
+
+    # create a new file for each split, parallelize this step
+    dataset_subset = []
+    for ds_split in dataset:
+        print(f"Saving `{ds_split}` split")
+        logger.info(f"Saving `{ds_split}` split")
+        
+        saved = 0
+        shard_idx = 0
+        for sample in tqdm(dataset[ds_split], total=max_samples):
+            if saved >= max_samples:
+                break
+            dataset_subset.append(sample)
+            saved += 1
+
+            if len(dataset_subset) >= split_size:
+
+                split_path = dataset_path / f"{ds_split}"
+                split_path.mkdir(parents=True, exist_ok=True)
+
+                print(f"Writing to {split_path / f'{shard_idx}.jsonl'}")
+                with open(split_path / f"{shard_idx}.jsonl", "w") as f:
+                    f.writelines(json.dumps(r.to_json()) + "\n" for r in dataset_subset)
+
+                dataset_subset = []
+                shard_idx += 1
+
+def save_to_jsonl(dataset, path_to_save, split_size, max_samples):
     # now we can save the dataset in jsonl format, divided in multiple files
     # we would like to parallelize this step, we can use the multiprocessing library
     dataset_path = Path(path_to_save)
@@ -29,6 +61,8 @@ def save_to_jsonl(dataset, path_to_save, split_size):
         logger.info(f"Saving `{ds_split}` split")
         # if the dataset is too big, we can split it in multiple files
         # but if it is small enough, we can save it in a single file
+        if max_samples is not None:
+            dataset[ds_split] = dataset[ds_split].select(range(max_samples))
         shards = dataset[ds_split].num_rows // split_size + 1
         print(f"Splitting in {shards} shards")
         for i in range(shards):
@@ -97,45 +131,44 @@ def main(args):
     if args.streaming:
         logger.info("==== Starting download CulturaX in streaming mode ====")
         dataset = load_dataset(
-            path=args.dataset_name,
-            language=args.language,
+            path=args.dataset_path,
             # split="train",  # TODO change this
             streaming=True,
             cache_dir=HF_CACHE,
             token=True,
         )
+        save_to_jsonl_streaming(dataset, args.path_to_save, args.split_size, args.max_samples)
         # download_streaming_dataset(dataset, args)
         # TODO improve this
-        download_streaming_dataset(
-            dataset, args.path_to_save, args.split_size, args.max_row
-        )
+        # download_streaming_dataset(
+        #     dataset, args.path_to_save, args.split_size, args.max_row
+        # )
     else:
         logger.info("==== Starting download CulturaX ====")
         dataset = load_dataset(
-            path=args.dataset_name,
-            language=args.language,
+            path=args.dataset_path,
             # split="train",
             cache_dir=HF_CACHE,
             token=True,
             num_proc=psutil.cpu_count(logical=False),
         )
-        save_to_jsonl(dataset, args.path_to_save, args.split_size)
+        save_to_jsonl(dataset, args.path_to_save, args.split_size, args.max_samples)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Download HF Dataset")
     parser.add_argument(
-        "--dataset_name",
+        "--dataset_path",
         type=str,
-        default="uonlp/CulturaX",
+        # default="uonlp/CulturaX",
         help="Dataset to download.",
     )
-    parser.add_argument(
-        "--language",
-        type=str,
-        default="it",
-        help="Language of the dataset to download.",
-    )
+    # parser.add_argument(
+    #     "--language",
+    #     type=str,
+    #     default="it",
+    #     help="Language of the dataset to download.",
+    # )
     parser.add_argument(
         "--path_to_save",
         type=str,
@@ -143,17 +176,16 @@ if __name__ == "__main__":
         help="Path to save the dataset.",
     )
     parser.add_argument(
-        "--max_row",
+        "--max_samples",
         type=int,
-        default=100_00,
         help="Max number of row to download",
     )
-    parser.add_argument(
-        "--step",
-        type=int,
-        default=10,
-        help="Number of document to download to wait every memory check",
-    )
+    # parser.add_argument(
+    #     "--step",
+    #     type=int,
+    #     default=10,
+    #     help="Number of document to download to wait every memory check",
+    # )
     parser.add_argument(
         "--streaming",
         action="store_true",
