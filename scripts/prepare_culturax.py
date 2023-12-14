@@ -15,8 +15,8 @@ import lit_gpt.packed_dataset as packed_dataset
 from lit_gpt import Config, Tokenizer
 
 filename_sets = {
-    "english_partition": "en/*.jsonl",
-    "italian_partition": "it/*.jsonl",
+    "english_partition": "en/**/*.jsonl",
+    "italian_partition": "it/**/*.jsonl",
     # "code_partition": "..." # TODO: consider even language as code language
 }
 
@@ -69,11 +69,12 @@ def prepare_full(
 def prepare(
     source_path: Path = Path("data/CulturaX"),
     tokenizer_path: Path = Path("checkpoints/CulturaX_tokenizer"),
+    config_name: str = "Llama-2-7b-hf",
     destination_path: Path = Path("data_tokenized/lit_CulturaX"),
     match: str = "",
 ) -> None:
     """Prepare the "Red Pajama" dataset. We assume tokenizer has been trained."""
-    config = Config.from_checkpoint(tokenizer_path)
+    config = Config.from_name(config_name)
 
     prepare_full(
         source_path=source_path,
