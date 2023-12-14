@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 HF_CACHE = os.getenv("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
 print(HF_CACHE)
 
-def save_to_jsonl_streaming(dataset, path_to_save, split_size, max_samples):
+def save_to_jsonl_streaming(dataset, path_to_save, split_size, max_samples=None, sources=None):
     # now we can save the dataset in jsonl format, divided in multiple files
     # we would like to parallelize this step, we can use the multiprocessing library
     dataset_path = Path(path_to_save)
@@ -33,6 +33,8 @@ def save_to_jsonl_streaming(dataset, path_to_save, split_size, max_samples):
         for sample in tqdm(dataset[ds_split], total=max_samples):
             if saved >= max_samples:
                 break
+            if sources is not None and sample["source"] not in sources:
+                continue
             dataset_subset.append(sample)
             saved += 1
 
@@ -137,7 +139,8 @@ def main(args):
             cache_dir=HF_CACHE,
             token=True,
         )
-        save_to_jsonl_streaming(dataset, args.path_to_save, args.split_size, args.max_samples)
+        sources = ["mC4", "OSCAR-2301", "OSCAR-2201"]
+        save_to_jsonl_streaming(dataset, args.path_to_save, args.split_size, args.max_samples, sources)
         # download_streaming_dataset(dataset, args)
         # TODO improve this
         # download_streaming_dataset(
